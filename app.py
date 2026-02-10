@@ -324,13 +324,23 @@ def show_rating_analysis(df):
         # Sample data for better visualization
         df_sample = df.dropna(subset=['rate', 'votes']).sample(min(1000, len(df.dropna(subset=['rate', 'votes']))))
         
-        fig = px.scatter(df_sample, x='votes', y='rate',
-                        title="Votes vs Rating",
-                        labels={'votes': 'Number of Votes', 'rate': 'Rating'},
-                        trendline="ols",
-                        opacity=0.6,
-                        color='rate',
-                        color_continuous_scale='Viridis')
+        # Try with trendline, fall back to without if statsmodels not available
+        try:
+            fig = px.scatter(df_sample, x='votes', y='rate',
+                            title="Votes vs Rating",
+                            labels={'votes': 'Number of Votes', 'rate': 'Rating'},
+                            trendline="ols",
+                            opacity=0.6,
+                            color='rate',
+                            color_continuous_scale='Viridis')
+        except Exception:
+            # Fallback without trendline if statsmodels not available
+            fig = px.scatter(df_sample, x='votes', y='rate',
+                            title="Votes vs Rating",
+                            labels={'votes': 'Number of Votes', 'rate': 'Rating'},
+                            opacity=0.6,
+                            color='rate',
+                            color_continuous_scale='Viridis')
         st.plotly_chart(fig, use_container_width=True)
     
     # Q10: Restaurants with highest votes
@@ -430,13 +440,22 @@ def show_cost_analysis(df):
         
         df_sample = df.dropna(subset=['rate', cost_col]).sample(min(1000, len(df.dropna(subset=['rate', cost_col]))))
         
-        fig = px.scatter(df_sample, x=cost_col, y='rate',
-                        title="Cost vs Rating",
-                        labels={cost_col: 'Cost for Two (₹)', 'rate': 'Rating'},
-                        trendline="ols",
-                        opacity=0.6,
-                        color='rate',
-                        color_continuous_scale='Viridis')
+        # Try with trendline, fall back to without if statsmodels not available
+        try:
+            fig = px.scatter(df_sample, x=cost_col, y='rate',
+                            title="Cost vs Rating",
+                            labels={cost_col: 'Cost for Two (₹)', 'rate': 'Rating'},
+                            trendline="ols",
+                            opacity=0.6,
+                            color='rate',
+                            color_continuous_scale='Viridis')
+        except Exception:
+            fig = px.scatter(df_sample, x=cost_col, y='rate',
+                            title="Cost vs Rating",
+                            labels={cost_col: 'Cost for Two (₹)', 'rate': 'Rating'},
+                            opacity=0.6,
+                            color='rate',
+                            color_continuous_scale='Viridis')
         st.plotly_chart(fig, use_container_width=True)
     
     # Q17: Correlation matrix
