@@ -901,44 +901,65 @@ def show_recommendations(df):
         st.error("Required columns (cost, rating) not available")
         return
     
+    # Remove rows with missing values in key columns
+    df_clean = df.dropna(subset=['approx_cost(for two people)', 'rate'])
+    
+    if len(df_clean) == 0:
+        st.error("No valid data available for recommendations")
+        return
+    
     col1, col2 = st.columns(2)
     
     with col1:
         max_cost = st.slider("Maximum Budget (₹)", 
-                            int(df['approx_cost(for two people)'].min()),
-                            int(df['approx_cost(for two people)'].max()),
-                            int(df['approx_cost(for two people)'].median()))
+                            int(df_clean['approx_cost(for two people)'].min()),
+                            int(df_clean['approx_cost(for two people)'].max()),
+                            int(df_clean['approx_cost(for two people)'].median()))
         
         min_rating = st.slider("Minimum Rating", 0.0, 5.0, 3.5, 0.1)
     
     with col2:
-        if 'location' in df.columns:
-            location = st.selectbox("Preferred Location (Optional)", 
-                                   ['Any'] + sorted(df['location'].unique().tolist()))
+        if 'location' in df_clean.columns:
+            # Get unique locations, excluding NaN values
+            unique_locations = df_clean['location'].dropna().unique()
+            if len(unique_locations) > 0:
+                location = st.selectbox("Preferred Location (Optional)", 
+                                       ['Any'] + sorted(unique_locations.tolist()))
+            else:
+                location = 'Any'
+                st.info("No location data available")
         else:
             location = 'Any'
         
-        if 'cuisines' in df.columns:
+        if 'cuisines' in df_clean.columns:
             # Get unique cuisines
             all_cuisines = set()
-            for cuisine in df['cuisines'].dropna():
-                all_cuisines.update([c.strip() for c in str(cuisine).split(',')])
+            for cuisine in df_clean['cuisines'].dropna():
+                try:
+                    all_cuisines.update([c.strip() for c in str(cuisine).split(',')])
+                except:
+                    continue
             
-            cuisine_pref = st.selectbox("Preferred Cuisine (Optional)",
-                                       ['Any'] + sorted(list(all_cuisines))[:50])
+            if len(all_cuisines) > 0:
+                cuisine_list = sorted(list(all_cuisines))[:50]
+                cuisine_pref = st.selectbox("Preferred Cuisine (Optional)",
+                                           ['Any'] + cuisine_list)
+            else:
+                cuisine_pref = 'Any'
+                st.info("No cuisine data available")
         else:
             cuisine_pref = 'Any'
     
     # Filter recommendations
-    recommendations = df[
-        (df['approx_cost(for two people)'] <= max_cost) &
-        (df['rate'] >= min_rating)
+    recommendations = df_clean[
+        (df_clean['approx_cost(for two people)'] <= max_cost) &
+        (df_clean['rate'] >= min_rating)
     ].copy()
     
-    if location != 'Any' and 'location' in df.columns:
+    if location != 'Any' and 'location' in df_clean.columns:
         recommendations = recommendations[recommendations['location'] == location]
     
-    if cuisine_pref != 'Any' and 'cuisines' in df.columns:
+    if cuisine_pref != 'Any' and 'cuisines' in df_clean.columns:
         recommendations = recommendations[recommendations['cuisines'].str.contains(cuisine_pref, na=False, case=False)]
     
     # Sort by rating and votes
